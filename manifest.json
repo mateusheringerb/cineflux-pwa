@@ -1,0 +1,16 @@
+{
+  "name": "CINEFLUX IPTV & VOD",
+  "short_name": "CINEFLUX",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#09090d",
+  "theme_color": "#09090d",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3163/3163478.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
