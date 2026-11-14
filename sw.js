@@ -1,4 +1,4 @@
-const CACHE_NAME = "stream-pwa-v7";
+const CACHE_NAME = "stream-pwa-v8";
 const ASSETS = ["./", "./index.html", "./style.css", "./app.js", "./config.js"];
 
 self.addEventListener("install", (e) => {
