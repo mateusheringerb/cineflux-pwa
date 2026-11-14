@@ -19,68 +19,93 @@
       <div class="brand-header" id="login-brand"></div>
       <p class="brand-subtitle" id="login-tagline"></p>
 
-      <!-- Abas dos formatos suportados -->
-      <div class="auth-tabs" role="tablist">
-        <button type="button" class="tab-btn active" data-type="xtream">Xtream Codes</button>
-        <button type="button" class="tab-btn" data-type="m3u">M3U / M3U8</button>
-        <button type="button" class="tab-btn" data-type="json">Lista JSON</button>
-        <button type="button" class="tab-btn" data-type="url">URL Direta</button>
+      <!-- Menu Suspenso de Tipo de Conexão (Altura Uniforme) -->
+      <div class="connection-select-wrapper" id="conn-dropdown">
+        <button type="button" class="connection-select-btn" id="conn-select-trigger" aria-expanded="false">
+          <div class="select-trigger-text">
+            <span class="select-mini-label">Formato da Lista</span>
+            <strong id="selected-type-label">Xtream Codes (Usuário e Senha)</strong>
+          </div>
+          <svg class="icon-svg chevron-icon" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+
+        <div class="connection-dropdown-menu hidden" id="conn-dropdown-menu" role="listbox">
+          <button type="button" class="dropdown-option active" data-type="xtream" data-label="Xtream Codes (Usuário e Senha)">
+            <span>Xtream Codes</span>
+            <small>Servidor, usuário e senha</small>
+          </button>
+          <button type="button" class="dropdown-option" data-type="m3u" data-label="Lista M3U / M3U8">
+            <span>Lista M3U / M3U8</span>
+            <small>Link URL ou arquivo local</small>
+          </button>
+          <button type="button" class="dropdown-option" data-type="json" data-label="Lista JSON">
+            <span>Lista JSON</span>
+            <small>URL JSON ou código direto</small>
+          </button>
+          <button type="button" class="dropdown-option" data-type="url" data-label="URL Direta de Stream">
+            <span>URL Direta</span>
+            <small>Link único (.m3u8, .mp4)</small>
+          </button>
+        </div>
       </div>
 
-      <!-- Formulário com Rótulos Flutuantes na Borda -->
+      <!-- Formulário com Altura Padronizada -->
       <form id="connection-form" class="auth-form">
-        <div class="floating-group">
-          <input type="text" id="profile-name" placeholder=" " required />
-          <label for="profile-name">Nome da Lista (Ex: Minha TV)</label>
-        </div>
-
-        <!-- Campos Xtream Codes -->
-        <div id="fields-xtream" class="type-fields">
+        <div class="auth-fields-stage">
           <div class="floating-group">
-            <input type="url" id="xtream-host" placeholder=" " />
-            <label for="xtream-host">Servidor / DNS (http://...)</label>
+            <input type="text" id="profile-name" placeholder=" " required />
+            <label for="profile-name">Nome da Lista (Ex: Minha TV)</label>
           </div>
-          <div class="input-row">
+
+          <!-- Campos Xtream Codes -->
+          <div id="fields-xtream" class="type-fields">
             <div class="floating-group">
-              <input type="text" id="xtream-user" placeholder=" " autocapitalize="none" />
-              <label for="xtream-user">Usuário</label>
+              <input type="url" id="xtream-host" placeholder=" " />
+              <label for="xtream-host">Servidor / DNS (http://...)</label>
+            </div>
+            <div class="input-row">
+              <div class="floating-group">
+                <input type="text" id="xtream-user" placeholder=" " autocapitalize="none" />
+                <label for="xtream-user">Usuário</label>
+              </div>
+              <div class="floating-group">
+                <input type="password" id="xtream-pass" placeholder=" " />
+                <label for="xtream-pass">Senha</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Campos M3U / M3U8 -->
+          <div id="fields-m3u" class="type-fields hidden">
+            <div class="floating-group">
+              <input type="url" id="m3u-url" placeholder=" " />
+              <label for="m3u-url">Link da Lista M3U ou M3U8</label>
+            </div>
+            <div class="file-box">
+              <span class="file-box-label">Ou carregue um arquivo local (.m3u / .m3u8)</span>
+              <input type="file" id="m3u-file" accept=".m3u,.m3u8,text/plain" />
+            </div>
+          </div>
+
+          <!-- Campos JSON -->
+          <div id="fields-json" class="type-fields hidden">
+            <div class="floating-group">
+              <input type="url" id="json-url" placeholder=" " />
+              <label for="json-url">URL do Arquivo JSON</label>
             </div>
             <div class="floating-group">
-              <input type="password" id="xtream-pass" placeholder=" " />
-              <label for="xtream-pass">Senha</label>
+              <textarea id="json-raw" rows="2" placeholder=" "></textarea>
+              <label for="json-raw">Ou cole o conteúdo JSON aqui</label>
             </div>
           </div>
-        </div>
 
-        <!-- Campos M3U / M3U8 -->
-        <div id="fields-m3u" class="type-fields hidden">
-          <div class="floating-group">
-            <input type="url" id="m3u-url" placeholder=" " />
-            <label for="m3u-url">Link da Lista M3U ou M3U8</label>
-          </div>
-          <div class="file-box">
-            <span class="file-box-label">Ou carregue um arquivo local (.m3u / .m3u8)</span>
-            <input type="file" id="m3u-file" accept=".m3u,.m3u8,text/plain" />
-          </div>
-        </div>
-
-        <!-- Campos JSON -->
-        <div id="fields-json" class="type-fields hidden">
-          <div class="floating-group">
-            <input type="url" id="json-url" placeholder=" " />
-            <label for="json-url">URL do Arquivo JSON</label>
-          </div>
-          <div class="floating-group">
-            <textarea id="json-raw" rows="3" placeholder=" "></textarea>
-            <label for="json-raw">Ou cole o conteúdo JSON aqui</label>
-          </div>
-        </div>
-
-        <!-- Campos URL Direta -->
-        <div id="fields-url" class="type-fields hidden">
-          <div class="floating-group">
-            <input type="url" id="direct-url" placeholder=" " />
-            <label for="direct-url">URL do Stream (.m3u8, .mp4, .mkv)</label>
+          <!-- Campos URL Direta -->
+          <div id="fields-url" class="type-fields hidden">
+            <div class="floating-group">
+              <input type="url" id="direct-url" placeholder=" " />
+              <label for="direct-url">URL do Stream (.m3u8, .mp4, .mkv)</label>
+            </div>
+            <p class="field-helper-note">Ideal para testar um canal específico ou link de vídeo único.</p>
           </div>
         </div>
 
@@ -109,38 +134,80 @@
 
       <div class="top-center">
         <div class="search-box">
-          <span class="search-icon">🔍</span>
+          <svg class="icon-svg search-icon" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
           <input type="search" id="search-input" placeholder="Buscar canal, filme ou série..." />
         </div>
       </div>
 
-      <div class="top-right">
-        <button id="btn-switch-list" class="btn-ghost" title="Trocar Lista">
-          ⇄ <span class="hide-mobile">Listas</span>
+      <!-- Menu de Três Pontinhos -->
+      <div class="top-right menu-wrapper">
+        <button id="btn-top-menu" class="btn-icon-only" aria-label="Mais opções" aria-expanded="false">
+          <svg class="icon-svg" viewBox="0 0 24 24">
+            <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"></circle>
+            <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"></circle>
+            <circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"></circle>
+          </svg>
         </button>
+
+        <div id="top-dropdown-menu" class="top-dropdown hidden">
+          <button type="button" id="btn-reload-list" class="top-dropdown-item">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            <span>Atualizar catálogo</span>
+          </button>
+          <button type="button" id="btn-switch-list" class="top-dropdown-item danger">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Sair / Trocar lista</span>
+          </button>
+        </div>
       </div>
     </header>
 
-    <!-- Navegação Principal -->
+    <!-- Navegação Principal (Ícones SVG 100% Padronizados) -->
     <nav class="main-nav">
       <button class="nav-item active" data-section="home">
-        <span class="nav-icon">⌂</span>
+        <svg class="nav-svg" viewBox="0 0 24 24">
+          <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"></path>
+        </svg>
         <span class="nav-label">Início</span>
       </button>
       <button class="nav-item" data-section="live">
-        <span class="nav-icon">📺</span>
+        <svg class="nav-svg" viewBox="0 0 24 24">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+          <polyline points="17 2 12 7 7 2"></polyline>
+        </svg>
         <span class="nav-label">TV ao Vivo</span>
       </button>
       <button class="nav-item" data-section="movies">
-        <span class="nav-icon">🎬</span>
+        <svg class="nav-svg" viewBox="0 0 24 24">
+          <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+          <line x1="7" y1="2" x2="7" y2="22"></line>
+          <line x1="17" y1="2" x2="17" y2="22"></line>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+        </svg>
         <span class="nav-label">Filmes</span>
       </button>
       <button class="nav-item" data-section="series">
-        <span class="nav-icon">🎞️</span>
+        <svg class="nav-svg" viewBox="0 0 24 24">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
         <span class="nav-label">Séries</span>
       </button>
       <button class="nav-item" data-section="favorites">
-        <span class="nav-icon">★</span>
+        <svg class="nav-svg" viewBox="0 0 24 24">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        </svg>
         <span class="nav-label">Minha Lista</span>
       </button>
     </nav>
@@ -157,34 +224,49 @@
           <h1 id="hero-title">Título em Destaque</h1>
           <p id="hero-desc">Toque para iniciar a reprodução.</p>
           <div class="hero-actions">
-            <button id="hero-play-btn" class="btn-primary">▶ Assistir</button>
-            <button id="hero-info-btn" class="btn-secondary">ⓘ Sobre</button>
+            <button id="hero-play-btn" class="btn-primary">
+              <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span>Assistir</span>
+            </button>
+            <button id="hero-info-btn" class="btn-secondary">
+              <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              <span>Sobre</span>
+            </button>
           </div>
         </div>
       </div>
 
-      <!-- Barra de Categorias em Português -->
+      <!-- Barra de Categorias (Usada apenas em Filmes e Séries) -->
       <div id="category-bar" class="category-bar hidden"></div>
 
-      <!-- Seção de Carrosséis Horizontais (Início e TV ao Vivo por Categoria) -->
+      <!-- Seção de Carrosséis Horizontais (Início e TV ao Vivo) -->
       <div id="home-rows" class="rows-container"></div>
 
-      <!-- Grade de Itens (Quando filtra uma categoria específica, VODs ou Busca) -->
+      <!-- Grade Expandida (Com Botão Voltar) -->
       <div id="catalog-grid-wrapper" class="hidden">
         <div class="section-header">
-          <h2 id="section-title">Catálogo</h2>
+          <div class="section-title-group">
+            <button type="button" id="btn-grid-back" class="btn-back-inline hidden">
+              <svg class="icon-svg" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+              <span>Voltar</span>
+            </button>
+            <h2 id="section-title">Catálogo</h2>
+          </div>
           <span id="section-count" class="count-badge">0 itens</span>
         </div>
         <div id="catalog-grid" class="media-grid"></div>
+        <div id="empty-state-box" class="empty-state hidden"></div>
         <div id="scroll-sentinel" class="scroll-sentinel"></div>
       </div>
     </main>
   </section>
 
-  <!-- ================= TELA "SOBRE" (DETALHES DE FILME / SÉRIE / CANAL) ================= -->
+  <!-- ================= TELA "SOBRE" (DETALHES DE FILME / SÉRIE) ================= -->
   <div id="vod-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
-      <button id="btn-close-modal" class="modal-close" aria-label="Fechar">✕</button>
+      <button id="btn-close-modal" class="modal-close" aria-label="Fechar">
+        <svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
       
       <div class="modal-hero">
         <img id="modal-backdrop" src="" alt="" />
@@ -216,10 +298,12 @@
         <!-- Botões de Ação -->
         <div class="modal-actions">
           <button id="btn-resume" class="btn-primary hidden">
-            ▶ Continuar de <span id="resume-time-label">00:00</span>
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <span>Continuar de <span id="resume-time-label">00:00</span></span>
           </button>
           <button id="btn-play-start" class="btn-primary">
-            ▶ Assistir do início
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <span>Assistir do início</span>
           </button>
           <button id="btn-toggle-fav" class="btn-secondary">
             + Minha Lista
@@ -245,18 +329,27 @@
   <!-- ================= PLAYER DE VÍDEO FULLSCREEN ================= -->
   <div id="player-overlay" class="player-overlay hidden">
     <div class="player-top-controls">
-      <button id="btn-close-player" class="btn-player-ctrl">← Voltar</button>
+      <button id="btn-close-player" class="btn-player-ctrl">
+        <svg class="icon-svg" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        <span>Voltar</span>
+      </button>
       <div class="player-title-box">
         <h4 id="player-title">Reproduzindo</h4>
         <span id="player-subtitle"></span>
       </div>
       <div class="player-right-ctrls">
-        <button id="btn-restart-video" class="btn-player-ctrl" title="Recomeçar">↺ Início</button>
-        <button id="btn-pip" class="btn-player-ctrl" title="Picture-in-Picture">⧉ PiP</button>
+        <button id="btn-restart-video" class="btn-player-ctrl" title="Recomeçar">
+          <svg class="icon-svg" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+          <span>Início</span>
+        </button>
+        <button id="btn-pip" class="btn-player-ctrl" title="Picture-in-Picture">
+          <svg class="icon-svg" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><rect x="12" y="10" width="8" height="5" rx="1"></rect></svg>
+          <span>PiP</span>
+        </button>
       </div>
     </div>
 
-    <video id="video-player" controls playsinline webkit-playsinline autoplay></video>
+    <video id="video-player" controls playsinline webkit-playsinline x-webkit-airplay="allow" autoplay></video>
     <div id="player-spinner" class="player-spinner hidden">Carregando stream...</div>
   </div>
 
