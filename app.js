@@ -103,6 +103,8 @@ const state = {
   backAction: null
 };
 
+let playerControlsTimer = null;
+
 // ================= INICIALIZAÇÃO & TEMA =================
 document.addEventListener("DOMContentLoaded", () => {
   applyCustomConfig();
@@ -548,7 +550,6 @@ function switchSection(section) {
     homeRows.classList.remove("hidden");
     renderHomeView();
   } else if (section === "live") {
-    // Sem barra de categorias duplicada no topo: apenas os carrosséis por categoria
     hero.classList.add("hidden");
     catBar.classList.add("hidden");
     renderLiveTvView();
@@ -884,7 +885,29 @@ function renderEpisodesList(episodes, seriesItem) {
   });
 }
 
-// ================= PLAYER, PIP & MEDIA SESSION (SEGUNDO PLANO IOS) =================
+// ================= PLAYER, AUTO-OCULTAR BARRA & MEDIA SESSION =================
+function showPlayerControls() {
+  const topControls = document.querySelector(".player-top-controls");
+  const video = document.getElementById("video-player");
+  if (!topControls) return;
+
+  topControls.classList.remove("controls-hidden");
+  clearTimeout(playerControlsTimer);
+
+  if (video && !video.paused) {
+    playerControlsTimer = setTimeout(() => {
+      topControls.classList.add("controls-hidden");
+    }, 3500);
+  }
+}
+
+function hidePlayerControls() {
+  const topControls = document.querySelector(".player-top-controls");
+  if (!topControls) return;
+  clearTimeout(playerControlsTimer);
+  topControls.classList.add("controls-hidden");
+}
+
 function setupModalAndPlayer() {
   document.getElementById("btn-close-modal").addEventListener("click", () => {
     document.getElementById("vod-modal").classList.add("hidden");
@@ -896,21 +919,40 @@ function setupModalAndPlayer() {
     updateFavoriteButton(state.activeModalItem.id);
   });
 
+  const overlay = document.getElementById("player-overlay");
+  const topControls = document.querySelector(".player-top-controls");
   const video = document.getElementById("video-player");
 
+  overlay.addEventListener("click", (e) => {
+    if (e.target.closest(".player-top-controls")) {
+      showPlayerControls();
+      return;
+    }
+    if (topControls.classList.contains("controls-hidden")) {
+      showPlayerControls();
+    } else if (!video.paused) {
+      hidePlayerControls();
+    }
+  });
+
+  overlay.addEventListener("mousemove", () => {
+    showPlayerControls();
+  });
+
   document.getElementById("btn-close-player").addEventListener("click", () => {
+    clearTimeout(playerControlsTimer);
     saveCurrentProgress();
     stopPlayback();
-    document.getElementById("player-overlay").classList.add("hidden");
+    overlay.classList.add("hidden");
     if (state.currentSection === "home") renderHomeView();
   });
 
   document.getElementById("btn-restart-video").addEventListener("click", () => {
     video.currentTime = 0;
     video.play();
+    showPlayerControls();
   });
 
-  // Botão PiP nativo otimizado para iPhone (webkitSetPresentationMode) e Android/Desktop
   document.getElementById("btn-pip").addEventListener("click", async () => {
     try {
       if (video.webkitSupportsPresentationMode && typeof video.webkitSetPresentationMode === "function") {
@@ -924,12 +966,18 @@ function setupModalAndPlayer() {
     } catch (_) {}
   });
 
-  // Mantém estado da Media Session sincronizado para controles na Central de Controle / Tela Bloqueada
   video.addEventListener("play", () => {
     if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+    showPlayerControls();
   });
+
   video.addEventListener("pause", () => {
     if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+    showPlayerControls();
+  });
+
+  video.addEventListener("seeking", () => {
+    showPlayerControls();
   });
 
   setInterval(() => {
@@ -965,6 +1013,8 @@ function startPlayback(item, startTime = 0) {
 
   overlay.classList.remove("hidden");
   spinner.classList.remove("hidden");
+  showPlayerControls();
+
   document.getElementById("player-title").textContent = item.title;
   document.getElementById("player-subtitle").textContent = item.episodeTitle || (item.categories || [item.category]).join(" • ");
 
@@ -976,6 +1026,7 @@ function startPlayback(item, startTime = 0) {
       video.currentTime = startTime;
     }
     video.play().catch(() => {});
+    showPlayerControls();
   };
 
   if (streamUrl.includes(".m3u8") && !video.canPlayType("application/vnd.apple.mpegurl") && window.Hls?.isSupported()) {
@@ -990,6 +1041,7 @@ function startPlayback(item, startTime = 0) {
 }
 
 function stopPlayback() {
+  clearTimeout(playerControlsTimer);
   const video = document.getElementById("video-player");
   video.pause();
   video.removeAttribute("src");
