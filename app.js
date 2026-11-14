@@ -38,6 +38,25 @@ const CATEGORY_TRANSLATIONS = {
   "legislative": "Legislativo"
 };
 
+// ================= PRIORIZAÇÃO DE CANAIS BRASILEIROS =================
+const BRAZILIAN_KEYWORDS = [
+  /\b(br|brazil|brasil|pt-br|portugu[eê]s)\b/i,
+  /\b(globo|sbt|record|band|redetv|cultura|cnn brasil|jovem pan|agrobrasil|agrocanal|canal rural|canal do criador|fishtv|boas novas|amazon sat|arte 1|maisum|adrenalina pura|sportv|premiere|combate|telecine|megapix|multishow|gnt|viva|canal brasil|bis|off|gloob|tv brasil|tv câmara|tv senado|tv justiça|gazeta|rede vida|aparecida|canção nova|novo tempo)\b/i
+];
+
+function isBrazilianChannel(item) {
+  const haystack = `${item.country || ""} ${item.lang || ""} ${item.title || ""} ${(item.categories || []).join(" ")}`;
+  return BRAZILIAN_KEYWORDS.some(rx => rx.test(haystack));
+}
+
+function sortBrazilianFirst(items) {
+  return [...items].sort((a, b) => {
+    const aBr = isBrazilianChannel(a) ? 0 : 1;
+    const bBr = isBrazilianChannel(b) ? 0 : 1;
+    return aBr - bBr;
+  });
+}
+
 function normalizeCategories(rawGroup) {
   if (!rawGroup) return ["Geral"];
   const parts = String(rawGroup)
@@ -54,6 +73,14 @@ function normalizeCategories(rawGroup) {
 
   return [...new Set(translated)];
 }
+
+// ================= ÍCONES VETORIAIS (SEM EMOJIS) =================
+const SVG_ICONS = {
+  playTriangle: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>`,
+  tv: `<svg class="card-fallback-svg" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>`,
+  movie: `<svg class="card-fallback-svg" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>`,
+  close: `<svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`
+};
 
 // ================= ESTADO GLOBAL =================
 const state = {
@@ -72,13 +99,15 @@ const state = {
   activeSeriesData: null,
   currentPlaying: null,
   hlsInstance: null,
-  scrollObserver: null
+  scrollObserver: null,
+  backAction: null
 };
 
 // ================= INICIALIZAÇÃO & TEMA =================
 document.addEventListener("DOMContentLoaded", () => {
   applyCustomConfig();
   setupAuthListeners();
+  setupTopMenu();
   setupNavigation();
   setupModalAndPlayer();
   setupInfiniteScroll();
@@ -101,12 +130,13 @@ function applyCustomConfig() {
   root.style.setProperty("--text", APP_CONFIG.textColor);
   document.title = APP_CONFIG.appName;
 
-  const brandHTML = APP_CONFIG.logoUrl
-    ? `<img src="${APP_CONFIG.logoUrl}" alt="${APP_CONFIG.appName}">`
-    : `<span class="brand-symbol">${APP_CONFIG.logoSymbol}</span><span>${APP_CONFIG.appName}</span>`;
-
-  document.getElementById("login-brand").innerHTML = brandHTML;
-  document.getElementById("app-brand").innerHTML = brandHTML;
+  if (APP_CONFIG.logoUrl) {
+    document.getElementById("login-brand").innerHTML = `<img src="${APP_CONFIG.logoUrl}" alt="${APP_CONFIG.appName}">`;
+    document.getElementById("app-brand").innerHTML = `<img src="${APP_CONFIG.logoUrl}" alt="${APP_CONFIG.appName}">`;
+  } else {
+    document.getElementById("login-brand").innerHTML = `<span class="brand-symbol">${SVG_ICONS.playTriangle}</span><span>${APP_CONFIG.appName}</span>`;
+    document.getElementById("app-brand").innerHTML = `<span class="brand-mini-symbol">${SVG_ICONS.playTriangle}</span><span>${APP_CONFIG.appName}</span>`;
+  }
   document.getElementById("login-tagline").textContent = APP_CONFIG.appTagline;
 }
 
@@ -118,17 +148,43 @@ function proxify(url) {
   return url;
 }
 
-// ================= LOGIN E GESTÃO DE PERFIS =================
+// ================= MENU SUSPENSO DE LOGIN & PERFIS =================
 function setupAuthListeners() {
-  document.querySelectorAll(".tab-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      state.activeTab = btn.dataset.type;
+  const trigger = document.getElementById("conn-select-trigger");
+  const menu = document.getElementById("conn-dropdown-menu");
+  const labelDisplay = document.getElementById("selected-type-label");
+
+  trigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = !menu.classList.contains("hidden");
+    menu.classList.toggle("hidden", isOpen);
+    trigger.setAttribute("aria-expanded", String(!isOpen));
+  });
+
+  document.querySelectorAll(".dropdown-option").forEach(opt => {
+    opt.addEventListener("click", () => {
+      document.querySelectorAll(".dropdown-option").forEach(o => o.classList.remove("active"));
+      opt.classList.add("active");
+      state.activeTab = opt.dataset.type;
+      labelDisplay.textContent = opt.dataset.label;
+
+      menu.classList.add("hidden");
+      trigger.setAttribute("aria-expanded", "false");
 
       document.querySelectorAll(".type-fields").forEach(f => f.classList.add("hidden"));
       document.getElementById(`fields-${state.activeTab}`).classList.remove("hidden");
     });
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#conn-dropdown")) {
+      menu.classList.add("hidden");
+      trigger.setAttribute("aria-expanded", "false");
+    }
+    if (!e.target.closest(".menu-wrapper")) {
+      document.getElementById("top-dropdown-menu").classList.add("hidden");
+      document.getElementById("btn-top-menu").setAttribute("aria-expanded", "false");
+    }
   });
 
   document.getElementById("connection-form").addEventListener("submit", async (e) => {
@@ -173,8 +229,28 @@ function setupAuthListeners() {
       errBox.classList.remove("hidden");
     }
   });
+}
+
+function setupTopMenu() {
+  const menuBtn = document.getElementById("btn-top-menu");
+  const dropdown = document.getElementById("top-dropdown-menu");
+
+  menuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = !dropdown.classList.contains("hidden");
+    dropdown.classList.toggle("hidden", isOpen);
+    menuBtn.setAttribute("aria-expanded", String(!isOpen));
+  });
+
+  document.getElementById("btn-reload-list").addEventListener("click", () => {
+    dropdown.classList.add("hidden");
+    if (state.currentProfile) {
+      connectProfile(state.currentProfile);
+    }
+  });
 
   document.getElementById("btn-switch-list").addEventListener("click", () => {
+    dropdown.classList.add("hidden");
     document.getElementById("app-screen").classList.add("hidden");
     document.getElementById("login-screen").classList.remove("hidden");
     renderSavedProfiles();
@@ -207,14 +283,15 @@ function renderSavedProfiles() {
         <strong>${escapeHTML(p.name)}</strong><br/>
         <span>Formato: ${p.type.toUpperCase()}</span>
       </div>
-      <button class="btn-del-profile" data-del="${p.id}" title="Remover">✕</button>
+      <button type="button" class="btn-del-profile" data-del="${p.id}" title="Remover">${SVG_ICONS.close}</button>
     </div>
   `).join("");
 
   container.querySelectorAll(".profile-item").forEach(el => {
     el.addEventListener("click", (e) => {
-      if (e.target.dataset.del) {
-        const updated = getSavedProfiles().filter(x => x.id !== e.target.dataset.del);
+      const delBtn = e.target.closest("[data-del]");
+      if (delBtn) {
+        const updated = getSavedProfiles().filter(x => x.id !== delBtn.dataset.del);
         localStorage.setItem("iptv_profiles", JSON.stringify(updated));
         renderSavedProfiles();
         return;
@@ -257,6 +334,9 @@ async function connectProfile(profile) {
         url: profile.url
       });
     }
+
+    // Prioriza canais brasileiros no topo da lista ao vivo
+    state.catalog.live = sortBrazilianFirst(state.catalog.live);
 
     document.getElementById("login-screen").classList.add("hidden");
     document.getElementById("app-screen").classList.remove("hidden");
@@ -345,6 +425,8 @@ function parseM3U(text) {
     if (line.startsWith("#EXTINF:")) {
       const logoMatch = line.match(/tvg-logo="([^"]*)"/i);
       const groupMatch = line.match(/group-title="([^"]*)"/i);
+      const countryMatch = line.match(/tvg-country="([^"]*)"/i);
+      const langMatch = line.match(/tvg-language="([^"]*)"/i);
       const titleParts = line.split(",");
       const title = titleParts[titleParts.length - 1].trim() || "Canal sem nome";
       const cats = normalizeCategories(groupMatch ? groupMatch[1] : "Geral");
@@ -353,12 +435,12 @@ function parseM3U(text) {
         id: `m3u_${i}`,
         title,
         logo: logoMatch ? logoMatch[1] : "",
+        country: countryMatch ? countryMatch[1] : "",
+        lang: langMatch ? langMatch[1] : "",
         category: cats[0],
         categories: cats
       };
     } else if (line && !line.startsWith("#") && current) {
-      // Só classifica como VOD se a URL for arquivo de vídeo ou caminho explícito /movie/ ou /series/
-      // Canais ao vivo (.m3u8 / .ts) ficam em TV ao Vivo mesmo se a categoria for "Filmes" ou "Séries"
       const hasVodExt = /\.(mp4|mkv|avi|mov|m4v)(\?|$)/i.test(line);
       const isSeriesUrl = /\/series\//i.test(line) || (hasVodExt && /s[0-9]{1,2}e[0-9]{1,2}|[0-9]{1,2}x[0-9]{1,2}/i.test(current.title));
       const isMovieUrl = /\/movie\//i.test(line) || (hasVodExt && !isSeriesUrl);
@@ -383,6 +465,8 @@ function parseJSONList(data) {
       id: item.id || `json_${idx}`,
       type: item.type || (/\.(mp4|mkv)$/i.test(item.url) ? "movie" : "live"),
       title: item.name || item.title || `Item ${idx + 1}`,
+      country: item.country || "",
+      lang: item.language || "",
       category: cats[0],
       categories: cats,
       logo: item.logo || item.poster || "",
@@ -413,6 +497,14 @@ function setupNavigation() {
     });
   });
 
+  document.getElementById("btn-grid-back").addEventListener("click", () => {
+    if (typeof state.backAction === "function") {
+      state.backAction();
+    } else {
+      switchSection(state.currentSection);
+    }
+  });
+
   document.getElementById("search-input").addEventListener("input", (e) => {
     const q = e.target.value.trim().toLowerCase();
     if (!q) {
@@ -421,7 +513,10 @@ function setupNavigation() {
     }
     const all = [...state.catalog.live, ...state.catalog.movies, ...state.catalog.series];
     const results = all.filter(item => item.title.toLowerCase().includes(q));
-    showGridSection(`Resultados para "${e.target.value}"`, results, false);
+    document.getElementById("hero-banner").classList.add("hidden");
+    document.getElementById("home-rows").classList.add("hidden");
+    document.getElementById("catalog-grid-wrapper").classList.remove("hidden");
+    showGridSection(`Busca: "${e.target.value}"`, results, false, () => switchSection(state.currentSection));
   });
 }
 
@@ -438,6 +533,7 @@ function setupInfiniteScroll() {
 function switchSection(section) {
   state.currentSection = section;
   state.selectedCategory = "ALL";
+  state.backAction = null;
   document.getElementById("search-input").value = "";
   window.scrollTo({ top: 0, behavior: "instant" });
 
@@ -452,86 +548,59 @@ function switchSection(section) {
     homeRows.classList.remove("hidden");
     renderHomeView();
   } else if (section === "live") {
+    // Sem barra de categorias duplicada no topo: apenas os carrosséis por categoria
     hero.classList.add("hidden");
+    catBar.classList.add("hidden");
     renderLiveTvView();
   } else {
     hero.classList.add("hidden");
     homeRows.classList.add("hidden");
     gridWrap.classList.remove("hidden");
 
-    if (section === "movies") showGridSection("Filmes", state.catalog.movies, true);
-    else if (section === "series") showGridSection("Séries", state.catalog.series, true);
+    if (section === "movies") showGridSection("Filmes", state.catalog.movies, true, null);
+    else if (section === "series") showGridSection("Séries", state.catalog.series, true, null);
     else if (section === "favorites") {
       const favIds = getFavorites();
       const all = [...state.catalog.live, ...state.catalog.movies, ...state.catalog.series];
-      showGridSection("Minha Lista", all.filter(i => favIds.includes(i.id)), false);
+      showGridSection("Minha Lista", all.filter(i => favIds.includes(i.id)), false, null);
     }
   }
 }
 
-// Tela de TV ao Vivo com carrosséis horizontais por categoria em português
 function renderLiveTvView() {
   const items = state.catalog.live;
-  const catBar = document.getElementById("category-bar");
   const homeRows = document.getElementById("home-rows");
   const gridWrap = document.getElementById("catalog-grid-wrapper");
 
-  const allCats = [...new Set(items.flatMap(i => i.categories || [i.category]))];
-  const categories = ["ALL", ...allCats];
+  gridWrap.classList.add("hidden");
+  homeRows.classList.remove("hidden");
+  homeRows.innerHTML = "";
+  window.scrollTo({ top: 0, behavior: "instant" });
 
-  if (categories.length > 1) {
-    catBar.classList.remove("hidden");
-    catBar.innerHTML = categories.map(cat => `
-      <button class="cat-chip ${state.selectedCategory === cat ? "active" : ""}" data-cat="${escapeHTML(cat)}">
-        ${cat === "ALL" ? "Todos os Canais" : escapeHTML(cat)}
-      </button>
-    `).join("");
-
-    catBar.querySelectorAll(".cat-chip").forEach(chip => {
-      chip.addEventListener("click", () => {
-        state.selectedCategory = chip.dataset.cat;
-        renderLiveTvView();
-      });
-    });
-  } else {
-    catBar.classList.add("hidden");
+  if (!items.length) {
+    homeRows.innerHTML = `<div class="empty-state">${SVG_ICONS.tv}<p>Nenhum canal ao vivo encontrado nesta lista.</p></div>`;
+    return;
   }
 
-  // Se selecionou "Todos os Canais", mostra fileiras horizontais por categoria
-  if (state.selectedCategory === "ALL") {
-    gridWrap.classList.add("hidden");
-    homeRows.classList.remove("hidden");
-    homeRows.innerHTML = "";
-
-    if (!items.length) {
-      homeRows.innerHTML = `<p style="padding:24px;color:var(--text-muted)">Nenhum canal ao vivo encontrado nesta lista.</p>`;
-      return;
-    }
-
-    // Primeira fileira: Todos os Canais
-    appendRow(homeRows, `Todos os Canais (${items.length})`, items.slice(0, 30), () => {
-      showGridSection("Todos os Canais", items, false);
-      homeRows.classList.add("hidden");
-      gridWrap.classList.remove("hidden");
-    });
-
-    // Fileiras seguintes: Uma por categoria traduzida
-    allCats.forEach(cat => {
-      const catItems = items.filter(i => (i.categories || [i.category]).includes(cat));
-      if (catItems.length > 0) {
-        appendRow(homeRows, `${cat} (${catItems.length})`, catItems.slice(0, 25), () => {
-          state.selectedCategory = cat;
-          renderLiveTvView();
-        });
-      }
-    });
-  } else {
-    // Categoria específica selecionada -> Grade com rolagem infinita automática
+  // Primeira fileira: Todos os Canais (Canais brasileiros primeiro)
+  appendRow(homeRows, `Todos os Canais (${items.length})`, items.slice(0, 30), () => {
     homeRows.classList.add("hidden");
     gridWrap.classList.remove("hidden");
-    const filtered = items.filter(i => (i.categories || [i.category]).includes(state.selectedCategory));
-    showGridSection(state.selectedCategory, filtered, false);
-  }
+    showGridSection("Todos os Canais", items, false, () => renderLiveTvView());
+  });
+
+  // Fileiras seguintes por categoria traduzida
+  const allCats = [...new Set(items.flatMap(i => i.categories || [i.category]))];
+  allCats.forEach(cat => {
+    const catItems = items.filter(i => (i.categories || [i.category]).includes(cat));
+    if (catItems.length > 0) {
+      appendRow(homeRows, `${cat} (${catItems.length})`, catItems.slice(0, 25), () => {
+        homeRows.classList.add("hidden");
+        gridWrap.classList.remove("hidden");
+        showGridSection(cat, catItems, false, () => renderLiveTvView());
+      });
+    }
+  });
 }
 
 function renderHomeView() {
@@ -554,7 +623,10 @@ function renderHomeView() {
     hero.classList.add("hidden");
   }
 
-  const history = Object.values(getWatchHistory()).sort((a, b) => b.updatedAt - a.updatedAt);
+  const history = Object.values(getWatchHistory())
+    .filter(h => h.item && h.item.type !== "live")
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+
   if (history.length > 0) {
     appendRow(rowsContainer, "Continuar Assistindo", history.map(h => h.item));
   }
@@ -582,7 +654,7 @@ function appendRow(container, title, items, onSeeAll) {
   row.innerHTML = `
     <div class="row-header">
       <h3 class="row-title">${escapeHTML(title)}</h3>
-      ${onSeeAll ? `<button class="row-more-btn">Ver todos ›</button>` : ""}
+      ${onSeeAll ? `<button type="button" class="row-more-btn">Ver todos ›</button>` : ""}
     </div>
     <div class="row-scroller"></div>
   `;
@@ -594,15 +666,21 @@ function appendRow(container, title, items, onSeeAll) {
   container.appendChild(row);
 }
 
-function showGridSection(title, items, showCategories) {
+function showGridSection(title, items, showCategories, onBack) {
+  window.scrollTo({ top: 0, behavior: "instant" });
   document.getElementById("section-title").textContent = title;
   const catBar = document.getElementById("category-bar");
+  const backBtn = document.getElementById("btn-grid-back");
+  const emptyBox = document.getElementById("empty-state-box");
+
+  state.backAction = onBack || null;
+  backBtn.classList.toggle("hidden", !onBack);
 
   if (showCategories && items.length > 0) {
     const categories = ["ALL", ...new Set(items.flatMap(i => i.categories || [i.category]))];
     catBar.classList.remove("hidden");
     catBar.innerHTML = categories.map(cat => `
-      <button class="cat-chip ${state.selectedCategory === cat ? "active" : ""}" data-cat="${escapeHTML(cat)}">
+      <button type="button" class="cat-chip ${state.selectedCategory === cat ? "active" : ""}" data-cat="${escapeHTML(cat)}">
         ${cat === "ALL" ? "Todas" : escapeHTML(cat)}
       </button>
     `).join("");
@@ -610,10 +688,10 @@ function showGridSection(title, items, showCategories) {
     catBar.querySelectorAll(".cat-chip").forEach(chip => {
       chip.addEventListener("click", () => {
         state.selectedCategory = chip.dataset.cat;
-        showGridSection(title, items, true);
+        showGridSection(title, items, true, onBack);
       });
     });
-  } else if (state.currentSection !== "live") {
+  } else {
     catBar.classList.add("hidden");
   }
 
@@ -624,7 +702,14 @@ function showGridSection(title, items, showCategories) {
   document.getElementById("section-count").textContent = `${state.filteredItems.length} itens`;
   document.getElementById("catalog-grid").innerHTML = "";
   state.renderedCount = 0;
-  renderMoreCards();
+
+  if (state.filteredItems.length === 0) {
+    emptyBox.classList.remove("hidden");
+    emptyBox.innerHTML = `${SVG_ICONS.movie}<p>Nenhum conteúdo disponível nesta seção.</p>`;
+  } else {
+    emptyBox.classList.add("hidden");
+    renderMoreCards();
+  }
 }
 
 function renderMoreCards() {
@@ -641,17 +726,18 @@ function createMediaCard(item) {
   card.tabIndex = 0;
 
   const history = getWatchHistory()[item.id];
-  const progressPct = history && history.duration > 0
+  const progressPct = !isLive && history && history.duration > 0
     ? Math.min(100, Math.round((history.currentTime / history.duration) * 100))
     : 0;
 
   const subtitle = (item.categories || [item.category]).join(" • ");
+  const fallbackSvg = isLive ? SVG_ICONS.tv : SVG_ICONS.movie;
 
   card.innerHTML = `
     <div class="card-thumb ${isLive ? "live-thumb" : ""}">
       ${item.logo
-        ? `<img src="${item.logo}" loading="lazy" alt="" onerror="this.style.display='none'">`
-        : `<span class="card-fallback-icon">${isLive ? "📺" : "🎬"}</span>`}
+        ? `<img src="${item.logo}" loading="lazy" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">${fallbackSvg.replace('class="card-fallback-svg"', 'class="card-fallback-svg" style="display:none"')}`
+        : fallbackSvg}
       ${progressPct > 2 ? `<div class="card-progress-bar"><div class="card-progress-fill" style="width:${progressPct}%"></div></div>` : ""}
     </div>
     <div class="card-info">
@@ -660,7 +746,6 @@ function createMediaCard(item) {
     </div>
   `;
 
-  // Canais ao vivo tocam direto ao clicar; Filmes e Séries abrem a tela "Sobre"
   card.addEventListener("click", () => {
     if (isLive) {
       startPlayback(item, 0);
@@ -671,7 +756,7 @@ function createMediaCard(item) {
   return card;
 }
 
-// ================= TELA "SOBRE" (DETALHES VOD / SÉRIES / CANAL) =================
+// ================= TELA "SOBRE" (DETALHES VOD / SÉRIES) =================
 async function openDetailsModal(item) {
   state.activeModalItem = item;
   const modal = document.getElementById("vod-modal");
@@ -685,12 +770,11 @@ async function openDetailsModal(item) {
   document.getElementById("modal-category").textContent = (item.categories || [item.category]).join(" • ");
   document.getElementById("modal-title").textContent = item.title;
   document.getElementById("modal-year").textContent = item.year || (qualityMatch ? qualityMatch[1].toUpperCase() : "");
-  document.getElementById("modal-rating").textContent = item.rating ? `★ ${item.rating}` : (isLive ? "● AO VIVO" : "");
+  document.getElementById("modal-rating").textContent = item.rating ? `Nota ${item.rating}` : (isLive ? "AO VIVO" : "");
   document.getElementById("modal-duration").textContent = "";
   document.getElementById("modal-extra-info").innerHTML = "";
   document.getElementById("series-episodes-box").classList.add("hidden");
 
-  // Texto limpo para canais ao vivo ou VODs sem sinopse na lista
   if (item.synopsis) {
     document.getElementById("modal-synopsis").textContent = item.synopsis;
   } else if (isLive) {
@@ -725,13 +809,12 @@ async function openDetailsModal(item) {
   }
 
   const btnStart = document.getElementById("btn-play-start");
-  btnStart.textContent = isLive ? "▶ Assistir ao Vivo" : "▶ Assistir do início";
+  btnStart.querySelector("span").textContent = isLive ? "Assistir ao Vivo" : "Assistir do início";
   btnStart.onclick = () => {
     modal.classList.add("hidden");
     startPlayback(item, 0);
   };
 
-  // Busca metadados completos na API Xtream Codes
   if (state.currentProfile?.type === "xtream") {
     const { host, user, pass } = state.currentProfile;
     const base = `${host}/player_api.php?username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}`;
@@ -782,7 +865,7 @@ function renderEpisodesList(episodes, seriesItem) {
       <div>
         <strong>${ep.episode_num}. ${escapeHTML(ep.title || `Episódio ${ep.episode_num}`)}</strong>
       </div>
-      <span>▶</span>
+      ${SVG_ICONS.playTriangle}
     </div>
   `).join("");
 
@@ -801,7 +884,7 @@ function renderEpisodesList(episodes, seriesItem) {
   });
 }
 
-// ================= PLAYER DE VÍDEO & SALVAMENTO DE PROGRESSO =================
+// ================= PLAYER, PIP & MEDIA SESSION (SEGUNDO PLANO IOS) =================
 function setupModalAndPlayer() {
   document.getElementById("btn-close-modal").addEventListener("click", () => {
     document.getElementById("vod-modal").classList.add("hidden");
@@ -827,14 +910,26 @@ function setupModalAndPlayer() {
     video.play();
   });
 
+  // Botão PiP nativo otimizado para iPhone (webkitSetPresentationMode) e Android/Desktop
   document.getElementById("btn-pip").addEventListener("click", async () => {
-    if (document.pictureInPictureElement) {
-      await document.exitPictureInPicture();
-    } else if (video.requestPictureInPicture) {
-      await video.requestPictureInPicture();
-    } else if (video.webkitSetPresentationMode) {
-      video.webkitSetPresentationMode(video.webkitPresentationMode === "picture-in-picture" ? "inline" : "picture-in-picture");
-    }
+    try {
+      if (video.webkitSupportsPresentationMode && typeof video.webkitSetPresentationMode === "function") {
+        const nextMode = video.webkitPresentationMode === "picture-in-picture" ? "inline" : "picture-in-picture";
+        video.webkitSetPresentationMode(nextMode);
+      } else if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (video.requestPictureInPicture) {
+        await video.requestPictureInPicture();
+      }
+    } catch (_) {}
+  });
+
+  // Mantém estado da Media Session sincronizado para controles na Central de Controle / Tela Bloqueada
+  video.addEventListener("play", () => {
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+  });
+  video.addEventListener("pause", () => {
+    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
   });
 
   setInterval(() => {
@@ -844,9 +939,25 @@ function setupModalAndPlayer() {
   }, 5000);
 }
 
+function updateMediaSession(item) {
+  if (!("mediaSession" in navigator)) return;
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: item.title,
+      artist: (item.categories || [item.category]).join(" • "),
+      album: APP_CONFIG.appName,
+      artwork: item.logo ? [{ src: item.logo, sizes: "512x512", type: "image/png" }] : []
+    });
+    const video = document.getElementById("video-player");
+    navigator.mediaSession.setActionHandler("play", () => video.play());
+    navigator.mediaSession.setActionHandler("pause", () => video.pause());
+  } catch (_) {}
+}
+
 function startPlayback(item, startTime = 0) {
   stopPlayback();
   state.currentPlaying = item;
+  updateMediaSession(item);
 
   const overlay = document.getElementById("player-overlay");
   const video = document.getElementById("video-player");
@@ -892,7 +1003,7 @@ function stopPlayback() {
 function saveCurrentProgress() {
   const video = document.getElementById("video-player");
   const item = state.currentPlaying;
-  if (!item || !video.currentTime || video.currentTime < 5) return;
+  if (!item || item.type === "live" || !video.currentTime || video.currentTime < 5) return;
 
   const history = getWatchHistory();
   history[item.id] = {
@@ -921,7 +1032,7 @@ function toggleFavorite(id) {
 
 function updateFavoriteButton(id) {
   const btn = document.getElementById("btn-toggle-fav");
-  btn.textContent = getFavorites().includes(id) ? "✓ Na Minha Lista" : "+ Minha Lista";
+  btn.textContent = getFavorites().includes(id) ? "Na Minha Lista" : "+ Minha Lista";
 }
 
 function formatTime(sec) {
