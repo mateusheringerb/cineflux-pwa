@@ -14,7 +14,7 @@ const APP_CONFIG = {
   textColor: "#f5f5f7",
 
   // Proxy CORS / HTTPS (Opcional)
-  corsProxy: "",
+  corsProxy: "https://cineflux-pwa.mateusvitorhb.workers.dev?url=",
 
   // Quantidade de itens carregados por lote na rolagem infinita
   batchSize: 60
