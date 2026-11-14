@@ -9,7 +9,6 @@
   <title>Stream PWA</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Biblioteca HLS para Android, PC e TVs (no iPhone usa o motor nativo do Safari) -->
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
 </head>
 <body>
@@ -22,66 +21,66 @@
 
       <!-- Abas dos formatos suportados -->
       <div class="auth-tabs" role="tablist">
-        <button class="tab-btn active" data-type="xtream">Xtream Codes</button>
-        <button class="tab-btn" data-type="m3u">M3U / M3U8</button>
-        <button class="tab-btn" data-type="json">Lista JSON</button>
-        <button class="tab-btn" data-type="url">URL Direta</button>
+        <button type="button" class="tab-btn active" data-type="xtream">Xtream Codes</button>
+        <button type="button" class="tab-btn" data-type="m3u">M3U / M3U8</button>
+        <button type="button" class="tab-btn" data-type="json">Lista JSON</button>
+        <button type="button" class="tab-btn" data-type="url">URL Direta</button>
       </div>
 
-      <!-- Formulário Dinâmico -->
+      <!-- Formulário com Rótulos Flutuantes na Borda -->
       <form id="connection-form" class="auth-form">
-        <div class="input-group">
+        <div class="floating-group">
+          <input type="text" id="profile-name" placeholder=" " required />
           <label for="profile-name">Nome da Lista (Ex: Minha TV)</label>
-          <input type="text" id="profile-name" placeholder="Minha Lista Principal" required />
         </div>
 
         <!-- Campos Xtream Codes -->
         <div id="fields-xtream" class="type-fields">
-          <div class="input-group">
-            <label for="xtream-host">Servidor / DNS (com http:// ou https://)</label>
-            <input type="url" id="xtream-host" placeholder="http://servidor.exemplo.com:8080" />
+          <div class="floating-group">
+            <input type="url" id="xtream-host" placeholder=" " />
+            <label for="xtream-host">Servidor / DNS (http://...)</label>
           </div>
           <div class="input-row">
-            <div class="input-group">
+            <div class="floating-group">
+              <input type="text" id="xtream-user" placeholder=" " autocapitalize="none" />
               <label for="xtream-user">Usuário</label>
-              <input type="text" id="xtream-user" placeholder="Seu usuário" autocapitalize="none" />
             </div>
-            <div class="input-group">
+            <div class="floating-group">
+              <input type="password" id="xtream-pass" placeholder=" " />
               <label for="xtream-pass">Senha</label>
-              <input type="password" id="xtream-pass" placeholder="Sua senha" />
             </div>
           </div>
         </div>
 
         <!-- Campos M3U / M3U8 -->
         <div id="fields-m3u" class="type-fields hidden">
-          <div class="input-group">
+          <div class="floating-group">
+            <input type="url" id="m3u-url" placeholder=" " />
             <label for="m3u-url">Link da Lista M3U ou M3U8</label>
-            <input type="url" id="m3u-url" placeholder="http://exemplo.com/lista.m3u8" />
           </div>
-          <div class="input-group">
-            <label for="m3u-file">Ou carregue um arquivo local (.m3u / .m3u8)</label>
+          <div class="file-box">
+            <span class="file-box-label">Ou carregue um arquivo local (.m3u / .m3u8)</span>
             <input type="file" id="m3u-file" accept=".m3u,.m3u8,text/plain" />
           </div>
         </div>
 
         <!-- Campos JSON -->
         <div id="fields-json" class="type-fields hidden">
-          <div class="input-group">
+          <div class="floating-group">
+            <input type="url" id="json-url" placeholder=" " />
             <label for="json-url">URL do Arquivo JSON</label>
-            <input type="url" id="json-url" placeholder="https://exemplo.com/canais.json" />
           </div>
-          <div class="input-group">
-            <label for="json-raw">Ou cole o conteúdo JSON diretamente</label>
-            <textarea id="json-raw" rows="3" placeholder='[{"name":"Canal 1","url":"https://...","group":"Esportes"}]'></textarea>
+          <div class="floating-group">
+            <textarea id="json-raw" rows="3" placeholder=" "></textarea>
+            <label for="json-raw">Ou cole o conteúdo JSON aqui</label>
           </div>
         </div>
 
         <!-- Campos URL Direta -->
         <div id="fields-url" class="type-fields hidden">
-          <div class="input-group">
+          <div class="floating-group">
+            <input type="url" id="direct-url" placeholder=" " />
             <label for="direct-url">URL do Stream (.m3u8, .mp4, .mkv)</label>
-            <input type="url" id="direct-url" placeholder="https://exemplo.com/stream.m3u8" />
           </div>
         </div>
 
@@ -111,7 +110,7 @@
       <div class="top-center">
         <div class="search-box">
           <span class="search-icon">🔍</span>
-          <input type="search" id="search-input" placeholder="Buscar canais, filmes ou séries..." />
+          <input type="search" id="search-input" placeholder="Buscar canal, filme ou série..." />
         </div>
       </div>
 
@@ -122,7 +121,7 @@
       </div>
     </header>
 
-    <!-- Navegação Principal (Fixa embaixo no Mobile, lateral/topo em telas maiores) -->
+    <!-- Navegação Principal -->
     <nav class="main-nav">
       <button class="nav-item active" data-section="home">
         <span class="nav-icon">⌂</span>
@@ -149,14 +148,14 @@
     <!-- Conteúdo Rolável -->
     <main class="main-content" id="main-content">
       
-      <!-- Banner Destaque (estilo Netflix) -->
+      <!-- Banner Destaque -->
       <div id="hero-banner" class="hero-banner hidden">
         <div class="hero-backdrop" id="hero-backdrop"></div>
         <div class="hero-gradient"></div>
         <div class="hero-info">
           <span class="hero-badge" id="hero-badge">EM DESTAQUE</span>
           <h1 id="hero-title">Título em Destaque</h1>
-          <p id="hero-desc">Descrição breve do conteúdo selecionado.</p>
+          <p id="hero-desc">Toque para iniciar a reprodução.</p>
           <div class="hero-actions">
             <button id="hero-play-btn" class="btn-primary">▶ Assistir</button>
             <button id="hero-info-btn" class="btn-secondary">ⓘ Sobre</button>
@@ -164,20 +163,20 @@
         </div>
       </div>
 
-      <!-- Filtro de Categorias (Chips) -->
+      <!-- Barra de Categorias em Português -->
       <div id="category-bar" class="category-bar hidden"></div>
 
-      <!-- Seção Início (Carrosséis: Continuar Assistindo, Recentes, etc.) -->
+      <!-- Seção de Carrosséis Horizontais (Início e TV ao Vivo por Categoria) -->
       <div id="home-rows" class="rows-container"></div>
 
-      <!-- Grade de Itens (Para TV ao Vivo, Filmes, Séries, Busca e Favoritos) -->
+      <!-- Grade de Itens (Quando filtra uma categoria específica, VODs ou Busca) -->
       <div id="catalog-grid-wrapper" class="hidden">
         <div class="section-header">
           <h2 id="section-title">Catálogo</h2>
           <span id="section-count" class="count-badge">0 itens</span>
         </div>
         <div id="catalog-grid" class="media-grid"></div>
-        <button id="btn-load-more" class="btn-secondary load-more hidden">Carregar mais</button>
+        <div id="scroll-sentinel" class="scroll-sentinel"></div>
       </div>
     </main>
   </section>
@@ -206,7 +205,7 @@
           </div>
         </div>
 
-        <!-- Barra de progresso caso já tenha começado a assistir -->
+        <!-- Barra de progresso -->
         <div id="modal-progress-box" class="modal-progress-box hidden">
           <div class="progress-track">
             <div id="modal-progress-fill" class="progress-fill"></div>
@@ -214,7 +213,7 @@
           <span id="modal-progress-text" class="progress-label"></span>
         </div>
 
-        <!-- Botões de Ação estilo Netflix -->
+        <!-- Botões de Ação -->
         <div class="modal-actions">
           <button id="btn-resume" class="btn-primary hidden">
             ▶ Continuar de <span id="resume-time-label">00:00</span>
@@ -227,11 +226,11 @@
           </button>
         </div>
 
-        <!-- Sinopse e Elenco -->
-        <p id="modal-synopsis" class="modal-synopsis">Carregando detalhes...</p>
+        <!-- Sinopse e Detalhes -->
+        <p id="modal-synopsis" class="modal-synopsis"></p>
         <div id="modal-extra-info" class="modal-extra"></div>
 
-        <!-- Seletor de Temporadas e Episódios (Exclusivo para Séries) -->
+        <!-- Seletor de Temporadas e Episódios -->
         <div id="series-episodes-box" class="series-box hidden">
           <div class="series-header">
             <h3>Episódios</h3>
@@ -253,7 +252,6 @@
       </div>
       <div class="player-right-ctrls">
         <button id="btn-restart-video" class="btn-player-ctrl" title="Recomeçar">↺ Início</button>
-        <button id="btn-next-ep" class="btn-player-ctrl hidden">Próximo Ep ⏭</button>
         <button id="btn-pip" class="btn-player-ctrl" title="Picture-in-Picture">⧉ PiP</button>
       </div>
     </div>
