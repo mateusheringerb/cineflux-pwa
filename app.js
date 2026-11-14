@@ -74,7 +74,7 @@ function normalizeCategories(rawGroup) {
   return [...new Set(translated)];
 }
 
-// ================= ÍCONES VETORIAIS (SEM EMOJIS) =================
+// ================= ÍCONES VETORIAIS =================
 const SVG_ICONS = {
   playTriangle: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>`,
   tv: `<svg class="card-fallback-svg" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><polyline points="17 2 12 7 7 2"></polyline></svg>`,
@@ -104,6 +104,8 @@ const state = {
 };
 
 let playerControlsTimer = null;
+let streamTimeoutTimer = null;
+let playbackAttemptId = 0;
 
 // ================= INICIALIZAÇÃO & TEMA =================
 document.addEventListener("DOMContentLoaded", () => {
@@ -133,21 +135,57 @@ function applyCustomConfig() {
   document.title = APP_CONFIG.appName;
 
   if (APP_CONFIG.logoUrl) {
-    document.getElementById("login-brand").innerHTML = `<img src="${APP_CONFIG.logoUrl}" alt="${APP_CONFIG.appName}">`;
-    document.getElementById("app-brand").innerHTML = `<img src="${APP_CONFIG.logoUrl}" alt="${APP_CONFIG.appName}">`;
+    document.getElementById("login-brand").innerHTML = `<img src="${escapeHTML(APP_CONFIG.logoUrl)}" alt="${escapeHTML(APP_CONFIG.appName)}">`;
+    document.getElementById("app-brand").innerHTML = `<img src="${escapeHTML(APP_CONFIG.logoUrl)}" alt="${escapeHTML(APP_CONFIG.appName)}">`;
   } else {
-    document.getElementById("login-brand").innerHTML = `<span class="brand-symbol">${SVG_ICONS.playTriangle}</span><span>${APP_CONFIG.appName}</span>`;
-    document.getElementById("app-brand").innerHTML = `<span class="brand-mini-symbol">${SVG_ICONS.playTriangle}</span><span>${APP_CONFIG.appName}</span>`;
+    document.getElementById("login-brand").innerHTML = `<span class="brand-symbol">${SVG_ICONS.playTriangle}</span><span>${escapeHTML(APP_CONFIG.appName)}</span>`;
+    document.getElementById("app-brand").innerHTML = `<span class="brand-mini-symbol">${SVG_ICONS.playTriangle}</span><span>${escapeHTML(APP_CONFIG.appName)}</span>`;
   }
   document.getElementById("login-tagline").textContent = APP_CONFIG.appTagline;
 }
 
-function proxify(url) {
+function getNormalizedProxyBase() {
+  const raw = (APP_CONFIG.corsProxy || "").trim();
+  if (!raw) return "";
+  if (raw.endsWith("?url=") || raw.endsWith("&url=")) return raw;
+  return raw.replace(/\/+$/, "") + "/?url=";
+}
+
+function proxify(url, forceProxy = false) {
   if (!url) return "";
-  if (APP_CONFIG.corsProxy && url.startsWith("http://")) {
-    return APP_CONFIG.corsProxy + encodeURIComponent(url);
+  const proxyBase = getNormalizedProxyBase();
+  if (!proxyBase) return url;
+  if (url.startsWith(proxyBase)) return url;
+  if (forceProxy || url.startsWith("http://")) {
+    return proxyBase + encodeURIComponent(url);
   }
   return url;
+}
+
+function diagnoseStreamFailure(rawUrl, usedProxy) {
+  if (!rawUrl) return "Endereço do canal inválido ou vazio.";
+
+  if (/\/udp\//i.test(rawUrl) || /\.ogg(\?|$)/i.test(rawUrl)) {
+    return "Formato incompatível com o navegador do iPhone (stream UDP multicast ou .ogg).";
+  }
+
+  try {
+    const parsed = new URL(rawUrl);
+    const hasCustomPort = parsed.port && parsed.port !== "80" && parsed.port !== "443";
+    const hasExt = /\.(m3u8|m3u|mp4|mkv|webm|mov|mpd)(\?|$)/i.test(parsed.pathname);
+
+    if (!hasExt && hasCustomPort) {
+      return `Stream bruto MPEG-TS na porta :${parsed.port} (não suportado por navegadores web).`;
+    }
+    if (usedProxy && hasCustomPort && getNormalizedProxyBase().includes("workers.dev")) {
+      return `O proxy gratuito da Cloudflare bloqueia conexões na porta :${parsed.port} (${parsed.hostname}), ou o servidor está fora do ar.`;
+    }
+    if (rawUrl.startsWith("http://") && !usedProxy) {
+      return "Canal HTTP bloqueado pelo Safari. Configure um proxy HTTPS em config.js.";
+    }
+  } catch (_) {}
+
+  return "O servidor do canal está fora do ar, bloqueou o acesso externo ou expirou.";
 }
 
 // ================= MENU SUSPENSO DE LOGIN & PERFIS =================
@@ -253,6 +291,8 @@ function setupTopMenu() {
 
   document.getElementById("btn-switch-list").addEventListener("click", () => {
     dropdown.classList.add("hidden");
+    stopPlayback();
+    document.getElementById("player-overlay").classList.add("hidden");
     document.getElementById("app-screen").classList.add("hidden");
     document.getElementById("login-screen").classList.remove("hidden");
     renderSavedProfiles();
@@ -260,14 +300,20 @@ function setupTopMenu() {
 }
 
 function getSavedProfiles() {
-  return JSON.parse(localStorage.getItem("iptv_profiles") || "[]");
+  try {
+    return JSON.parse(localStorage.getItem("iptv_profiles") || "[]");
+  } catch {
+    return [];
+  }
 }
 
 function saveProfile(profile) {
-  const list = getSavedProfiles().filter(p => p.id !== profile.id);
-  list.unshift(profile);
-  localStorage.setItem("iptv_profiles", JSON.stringify(list));
-  localStorage.setItem("iptv_last_profile_id", profile.id);
+  try {
+    const list = getSavedProfiles().filter(p => p.id !== profile.id);
+    list.unshift(profile);
+    localStorage.setItem("iptv_profiles", JSON.stringify(list));
+    localStorage.setItem("iptv_last_profile_id", profile.id);
+  } catch (_) {}
 }
 
 function renderSavedProfiles() {
@@ -280,12 +326,12 @@ function renderSavedProfiles() {
   }
   box.classList.remove("hidden");
   container.innerHTML = list.map(p => `
-    <div class="profile-item" data-id="${p.id}">
+    <div class="profile-item" data-id="${escapeHTML(p.id)}">
       <div class="profile-meta">
         <strong>${escapeHTML(p.name)}</strong><br/>
-        <span>Formato: ${p.type.toUpperCase()}</span>
+        <span>Formato: ${escapeHTML(p.type.toUpperCase())}</span>
       </div>
-      <button type="button" class="btn-del-profile" data-del="${p.id}" title="Remover">${SVG_ICONS.close}</button>
+      <button type="button" class="btn-del-profile" data-del="${escapeHTML(p.id)}" title="Remover">${SVG_ICONS.close}</button>
     </div>
   `).join("");
 
@@ -308,6 +354,18 @@ function renderSavedProfiles() {
 }
 
 // ================= PARSERS (XTREAM CODES, M3U, JSON, URL) =================
+async function fetchTextChecked(url) {
+  const res = await fetch(proxify(url));
+  if (!res.ok) throw new Error(`Servidor retornou erro HTTP ${res.status}`);
+  return res.text();
+}
+
+async function fetchJSON(url) {
+  const res = await fetch(proxify(url));
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 async function connectProfile(profile) {
   const btn = document.getElementById("btn-connect");
   btn.textContent = "Carregando catálogo...";
@@ -320,10 +378,10 @@ async function connectProfile(profile) {
     if (profile.type === "xtream") {
       await loadXtreamCodes(profile);
     } else if (profile.type === "m3u") {
-      const text = profile.rawContent || await (await fetch(proxify(profile.url))).text();
+      const text = profile.rawContent || await fetchTextChecked(profile.url);
       parseM3U(text);
     } else if (profile.type === "json") {
-      const raw = profile.rawContent || await (await fetch(proxify(profile.url))).text();
+      const raw = profile.rawContent || await fetchTextChecked(profile.url);
       parseJSONList(JSON.parse(raw));
     } else if (profile.type === "url") {
       state.catalog.live.push({
@@ -337,7 +395,6 @@ async function connectProfile(profile) {
       });
     }
 
-    // Prioriza canais brasileiros no topo da lista ao vivo
     state.catalog.live = sortBrazilianFirst(state.catalog.live);
 
     document.getElementById("login-screen").classList.add("hidden");
@@ -418,6 +475,19 @@ async function loadXtreamCodes({ host, user, pass }) {
   });
 }
 
+function extractExtinfTitle(line) {
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') inQuotes = !inQuotes;
+    else if (ch === "," && !inQuotes) {
+      return line.slice(i + 1).trim();
+    }
+  }
+  const parts = line.split(",");
+  return parts[parts.length - 1].trim();
+}
+
 function parseM3U(text) {
   const lines = text.split(/\r?\n/);
   let current = null;
@@ -429,8 +499,7 @@ function parseM3U(text) {
       const groupMatch = line.match(/group-title="([^"]*)"/i);
       const countryMatch = line.match(/tvg-country="([^"]*)"/i);
       const langMatch = line.match(/tvg-language="([^"]*)"/i);
-      const titleParts = line.split(",");
-      const title = titleParts[titleParts.length - 1].trim() || "Canal sem nome";
+      const title = extractExtinfTitle(line) || "Canal sem nome";
       const cats = normalizeCategories(groupMatch ? groupMatch[1] : "Geral");
 
       current = {
@@ -482,11 +551,6 @@ function parseJSONList(data) {
     else if (entry.type === "series") state.catalog.series.push(entry);
     else state.catalog.live.push(entry);
   });
-}
-
-async function fetchJSON(url) {
-  const res = await fetch(proxify(url));
-  return res.json();
 }
 
 // ================= NAVEGAÇÃO E RENDERIZAÇÃO =================
@@ -583,14 +647,12 @@ function renderLiveTvView() {
     return;
   }
 
-  // Primeira fileira: Todos os Canais (Canais brasileiros primeiro)
   appendRow(homeRows, `Todos os Canais (${items.length})`, items.slice(0, 30), () => {
     homeRows.classList.add("hidden");
     gridWrap.classList.remove("hidden");
     showGridSection("Todos os Canais", items, false, () => renderLiveTvView());
   });
 
-  // Fileiras seguintes por categoria traduzida
   const allCats = [...new Set(items.flatMap(i => i.categories || [i.category]))];
   allCats.forEach(cat => {
     const catItems = items.filter(i => (i.categories || [i.category]).includes(cat));
@@ -614,7 +676,8 @@ function renderHomeView() {
 
   if (featured) {
     hero.classList.remove("hidden");
-    document.getElementById("hero-backdrop").style.backgroundImage = `url('${featured.backdrop || featured.logo}')`;
+    const safeBg = (featured.backdrop || featured.logo || "").replace(/["'\\]/g, "\\$&");
+    document.getElementById("hero-backdrop").style.backgroundImage = safeBg ? `url("${safeBg}")` : "none";
     document.getElementById("hero-badge").textContent = featured.category.toUpperCase();
     document.getElementById("hero-title").textContent = featured.title;
     document.getElementById("hero-desc").textContent = featured.synopsis || "Toque para assistir agora.";
@@ -737,7 +800,7 @@ function createMediaCard(item) {
   card.innerHTML = `
     <div class="card-thumb ${isLive ? "live-thumb" : ""}">
       ${item.logo
-        ? `<img src="${item.logo}" loading="lazy" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">${fallbackSvg.replace('class="card-fallback-svg"', 'class="card-fallback-svg" style="display:none"')}`
+        ? `<img src="${escapeHTML(item.logo)}" loading="lazy" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">${fallbackSvg.replace('class="card-fallback-svg"', 'class="card-fallback-svg" style="display:none"')}`
         : fallbackSvg}
       ${progressPct > 2 ? `<div class="card-progress-bar"><div class="card-progress-fill" style="width:${progressPct}%"></div></div>` : ""}
     </div>
@@ -924,7 +987,7 @@ function setupModalAndPlayer() {
   const video = document.getElementById("video-player");
 
   overlay.addEventListener("click", (e) => {
-    if (e.target.closest(".player-top-controls")) {
+    if (e.target.closest(".player-top-controls") || e.target.closest("#player-error")) {
       showPlayerControls();
       return;
     }
@@ -949,21 +1012,14 @@ function setupModalAndPlayer() {
 
   document.getElementById("btn-restart-video").addEventListener("click", () => {
     video.currentTime = 0;
-    video.play();
+    video.play().catch(() => {});
     showPlayerControls();
   });
 
-  document.getElementById("btn-pip").addEventListener("click", async () => {
-    try {
-      if (video.webkitSupportsPresentationMode && typeof video.webkitSetPresentationMode === "function") {
-        const nextMode = video.webkitPresentationMode === "picture-in-picture" ? "inline" : "picture-in-picture";
-        video.webkitSetPresentationMode(nextMode);
-      } else if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-      } else if (video.requestPictureInPicture) {
-        await video.requestPictureInPicture();
-      }
-    } catch (_) {}
+  document.getElementById("btn-player-retry").addEventListener("click", () => {
+    if (state.currentPlaying) {
+      startPlayback(state.currentPlaying, 0, false);
+    }
   });
 
   video.addEventListener("play", () => {
@@ -981,7 +1037,7 @@ function setupModalAndPlayer() {
   });
 
   setInterval(() => {
-    if (!video.paused && !video.ended && state.currentPlaying) {
+    if (!overlay.classList.contains("hidden") && !video.paused && !video.ended && state.currentPlaying) {
       saveCurrentProgress();
     }
   }, 5000);
@@ -997,31 +1053,56 @@ function updateMediaSession(item) {
       artwork: item.logo ? [{ src: item.logo, sizes: "512x512", type: "image/png" }] : []
     });
     const video = document.getElementById("video-player");
-    navigator.mediaSession.setActionHandler("play", () => video.play());
+    navigator.mediaSession.setActionHandler("play", () => video.play().catch(() => {}));
     navigator.mediaSession.setActionHandler("pause", () => video.pause());
   } catch (_) {}
 }
 
-function startPlayback(item, startTime = 0) {
+function showPlayerError(message) {
+  clearTimeout(streamTimeoutTimer);
+  document.getElementById("player-spinner").classList.add("hidden");
+  document.getElementById("player-error-msg").textContent = message;
+  document.getElementById("player-error").classList.remove("hidden");
+  showPlayerControls();
+}
+
+function startPlayback(item, startTime = 0, forceProxy = false) {
   stopPlayback();
+  const attemptId = ++playbackAttemptId;
   state.currentPlaying = item;
   updateMediaSession(item);
 
   const overlay = document.getElementById("player-overlay");
   const video = document.getElementById("video-player");
   const spinner = document.getElementById("player-spinner");
+  const errorBox = document.getElementById("player-error");
+  const restartBtn = document.getElementById("btn-restart-video");
 
   overlay.classList.remove("hidden");
+  errorBox.classList.add("hidden");
   spinner.classList.remove("hidden");
+  restartBtn.classList.toggle("hidden", item.type === "live");
   showPlayerControls();
 
   document.getElementById("player-title").textContent = item.title;
   document.getElementById("player-subtitle").textContent = item.episodeTitle || (item.categories || [item.category]).join(" • ");
 
-  const streamUrl = proxify(item.url);
+  const rawUrl = item.url || "";
+  const streamUrl = proxify(rawUrl, forceProxy);
+  const usedProxy = streamUrl !== rawUrl;
 
-  const onReady = () => {
+  if (!rawUrl || /\/udp\//i.test(rawUrl) || /\.ogg(\?|$)/i.test(rawUrl)) {
+    showPlayerError(diagnoseStreamFailure(rawUrl, usedProxy));
+    return;
+  }
+
+  let settled = false;
+  const markReady = () => {
+    if (settled || attemptId !== playbackAttemptId) return;
+    settled = true;
+    clearTimeout(streamTimeoutTimer);
     spinner.classList.add("hidden");
+    errorBox.classList.add("hidden");
     if (startTime > 0 && isFinite(video.duration)) {
       video.currentTime = startTime;
     }
@@ -1029,23 +1110,67 @@ function startPlayback(item, startTime = 0) {
     showPlayerControls();
   };
 
-  if (streamUrl.includes(".m3u8") && !video.canPlayType("application/vnd.apple.mpegurl") && window.Hls?.isSupported()) {
-    state.hlsInstance = new Hls();
+  const handleFailure = () => {
+    if (settled || attemptId !== playbackAttemptId) return;
+    settled = true;
+    clearTimeout(streamTimeoutTimer);
+
+    // Se falhou em HTTPS direto e existe proxy configurado, tenta automaticamente via proxy uma vez
+    if (!usedProxy && rawUrl.startsWith("https://") && getNormalizedProxyBase()) {
+      startPlayback(item, startTime, true);
+      return;
+    }
+
+    showPlayerError(diagnoseStreamFailure(rawUrl, usedProxy));
+  };
+
+  streamTimeoutTimer = setTimeout(() => {
+    if (!settled && attemptId === playbackAttemptId) {
+      handleFailure();
+    }
+  }, 15000);
+
+  const isHls = /\.m3u8(\?|$)/i.test(rawUrl) || streamUrl.includes(".m3u8");
+
+  if (isHls && !video.canPlayType("application/vnd.apple.mpegurl") && window.Hls?.isSupported()) {
+    state.hlsInstance = new Hls({
+      enableWorker: true,
+      lowLatencyMode: true
+    });
+    state.hlsInstance.on(Hls.Events.MANIFEST_PARSED, markReady);
+    state.hlsInstance.on(Hls.Events.ERROR, (_, data) => {
+      if (data?.fatal) {
+        handleFailure();
+      }
+    });
     state.hlsInstance.loadSource(streamUrl);
     state.hlsInstance.attachMedia(video);
-    state.hlsInstance.on(Hls.Events.MANIFEST_PARSED, onReady);
   } else {
+    video.onerror = handleFailure;
+    video.onloadeddata = markReady;
+    video.oncanplay = markReady;
+    video.onplaying = markReady;
     video.src = streamUrl;
-    video.addEventListener("loadedmetadata", onReady, { once: true });
+    video.load();
+    // Inicia o play imediatamente dentro do gesto do usuário (essencial no iOS Safari)
+    video.play().catch(() => {});
   }
 }
 
 function stopPlayback() {
+  playbackAttemptId++;
   clearTimeout(playerControlsTimer);
+  clearTimeout(streamTimeoutTimer);
+
   const video = document.getElementById("video-player");
+  video.onerror = null;
+  video.onloadeddata = null;
+  video.oncanplay = null;
+  video.onplaying = null;
   video.pause();
   video.removeAttribute("src");
   video.load();
+
   if (state.hlsInstance) {
     state.hlsInstance.destroy();
     state.hlsInstance = null;
@@ -1057,29 +1182,46 @@ function saveCurrentProgress() {
   const item = state.currentPlaying;
   if (!item || item.type === "live" || !video.currentTime || video.currentTime < 5) return;
 
-  const history = getWatchHistory();
-  history[item.id] = {
-    item: { ...item, episodeId: undefined, episodeTitle: undefined },
-    episodeItem: item.episodeId ? item : null,
-    currentTime: video.currentTime,
-    duration: isFinite(video.duration) ? video.duration : 0,
-    updatedAt: Date.now()
-  };
-  localStorage.setItem("iptv_history", JSON.stringify(history));
+  try {
+    const history = getWatchHistory();
+    history[item.id] = {
+      item: { ...item, episodeId: undefined, episodeTitle: undefined },
+      episodeItem: item.episodeId ? item : null,
+      currentTime: video.currentTime,
+      duration: isFinite(video.duration) ? video.duration : 0,
+      updatedAt: Date.now()
+    };
+
+    const entries = Object.entries(history)
+      .sort((a, b) => b[1].updatedAt - a[1].updatedAt)
+      .slice(0, 50);
+
+    localStorage.setItem("iptv_history", JSON.stringify(Object.fromEntries(entries)));
+  } catch (_) {}
 }
 
 function getWatchHistory() {
-  return JSON.parse(localStorage.getItem("iptv_history") || "{}");
+  try {
+    return JSON.parse(localStorage.getItem("iptv_history") || "{}");
+  } catch {
+    return {};
+  }
 }
 
 function getFavorites() {
-  return JSON.parse(localStorage.getItem("iptv_favorites") || "[]");
+  try {
+    return JSON.parse(localStorage.getItem("iptv_favorites") || "[]");
+  } catch {
+    return [];
+  }
 }
 
 function toggleFavorite(id) {
   let favs = getFavorites();
   favs = favs.includes(id) ? favs.filter(f => f !== id) : [...favs, id];
-  localStorage.setItem("iptv_favorites", JSON.stringify(favs));
+  try {
+    localStorage.setItem("iptv_favorites", JSON.stringify(favs));
+  } catch (_) {}
 }
 
 function updateFavoriteButton(id) {
