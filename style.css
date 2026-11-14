@@ -28,6 +28,29 @@ body {
 
 .hidden { display: none !important; }
 
+/* Ícones SVG Uniformes */
+.icon-svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  flex-shrink: 0;
+}
+
+.nav-svg {
+  width: 21px;
+  height: 21px;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  flex-shrink: 0;
+}
+
 button:focus-visible, input:focus-visible, select:focus-visible, .media-card:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
@@ -69,20 +92,22 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
 }
 .btn-secondary:hover { background: rgba(255, 255, 255, 0.2); }
 
-.btn-ghost {
-  background: transparent;
-  color: var(--text-muted);
+.btn-icon-only {
+  background: var(--surface);
+  color: var(--text);
   border: 1px solid var(--border);
-  padding: 8px 10px;
-  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 0.85rem;
-  white-space: nowrap;
+  flex-shrink: 0;
 }
-.btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.28); }
-.hide-mobile { display: none; }
+.btn-icon-only:hover { border-color: rgba(255,255,255,0.28); }
 
-/* ================= TELA DE LOGIN & FLOATING LABELS ================= */
+/* ================= TELA DE LOGIN & DROPDOWN UNIFORME ================= */
 #login-screen {
   min-height: 100vh;
   display: flex;
@@ -94,7 +119,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
 
 .login-container {
   width: 100%;
-  max-width: 480px;
+  max-width: 460px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -107,7 +132,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   align-items: center;
   justify-content: center;
   gap: 10px;
-  font-size: 1.75rem;
+  font-size: 1.7rem;
   font-weight: 800;
   letter-spacing: 1px;
 }
@@ -121,7 +146,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
 }
 
 .brand-subtitle {
@@ -132,41 +156,123 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   margin-bottom: 22px;
 }
 
-.auth-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+/* Menu Suspenso de Formato de Conexão */
+.connection-select-wrapper {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.connection-select-btn {
+  width: 100%;
   background: var(--bg);
-  padding: 5px;
-  border-radius: 12px;
-  margin-bottom: 22px;
-}
-
-.tab-btn {
-  background: transparent;
-  color: var(--text-muted);
-  border: none;
-  padding: 9px 4px;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.tab-btn.active {
-  background: var(--surface-hover);
+  border: 1.5px solid var(--border);
   color: var(--text);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  padding: 11px 14px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s;
+}
+.connection-select-btn:hover,
+.connection-select-btn[aria-expanded="true"] {
+  border-color: var(--primary);
 }
 
-.auth-form, .type-fields {
+.select-trigger-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.select-mini-label {
+  font-size: 0.72rem;
+  color: var(--primary);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.select-trigger-text strong {
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.chevron-icon {
+  transition: transform 0.2s ease;
+  color: var(--text-muted);
+}
+.connection-select-btn[aria-expanded="true"] .chevron-icon {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+
+.connection-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #181822;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dropdown-option {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dropdown-option span { font-size: 0.92rem; font-weight: 600; }
+.dropdown-option small { font-size: 0.76rem; color: var(--text-muted); }
+.dropdown-option:hover { background: rgba(255, 255, 255, 0.08); }
+.dropdown-option.active {
+  background: rgba(229, 9, 20, 0.16);
+  border-left: 3px solid var(--primary);
+}
+
+/* Estágio de Campos com Altura Fixa para não pular ao trocar opção */
+.auth-form {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
+
+.auth-fields-stage {
+  min-height: 204px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.type-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
 .input-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+.field-helper-note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding: 6px 4px;
 }
 
 /* Campo com Rótulo Flutuante na Borda Vermelha */
@@ -181,9 +287,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   background: var(--bg);
   border: 1.5px solid var(--border);
   color: var(--text);
-  padding: 15px 14px;
+  padding: 14px;
   border-radius: 10px;
-  font-size: 0.95rem;
+  font-size: 0.94rem;
   font-family: inherit;
   transition: border-color 0.2s ease;
 }
@@ -197,7 +303,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   padding: 0 6px;
   border-radius: 4px;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   pointer-events: none;
   transition: top 0.18s ease, font-size 0.18s ease, color 0.18s ease;
   white-space: nowrap;
@@ -206,9 +312,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   text-overflow: ellipsis;
 }
 
-.floating-group textarea ~ label {
-  top: 22px;
-}
+.floating-group textarea ~ label { top: 20px; }
 
 .floating-group input:focus,
 .floating-group textarea:focus {
@@ -216,7 +320,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   outline: none;
 }
 
-/* Sobe para a borda superior quando focado ou preenchido */
 .floating-group input:focus ~ label,
 .floating-group input:not(:placeholder-shown) ~ label,
 .floating-group textarea:focus ~ label,
@@ -237,19 +340,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   background: var(--bg);
   border: 1.5px dashed var(--border);
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
-.file-box-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-.file-box input[type="file"] {
-  font-size: 0.85rem;
-  color: var(--text);
-}
+.file-box-label { font-size: 0.78rem; color: var(--text-muted); }
+.file-box input[type="file"] { font-size: 0.84rem; color: var(--text); }
 
 .error-msg {
   color: #ff5c5c;
@@ -261,11 +358,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
 }
 
 .saved-profiles {
-  margin-top: 24px;
-  padding-top: 18px;
+  margin-top: 22px;
+  padding-top: 16px;
   border-top: 1px solid var(--border);
 }
-.saved-profiles h3 { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px; }
+.saved-profiles h3 { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 10px; }
 .profiles-grid { display: flex; flex-direction: column; gap: 8px; }
 
 .profile-item {
@@ -279,23 +376,24 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   cursor: pointer;
 }
 .profile-item:hover { border-color: var(--primary); }
-.profile-meta span { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; }
+.profile-meta span { font-size: 0.74rem; color: var(--text-muted); text-transform: uppercase; }
 .btn-del-profile {
   background: transparent;
   border: none;
   color: #ff5c5c;
-  padding: 6px 10px;
+  padding: 6px;
   cursor: pointer;
-  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
 }
 
-/* ================= TOP BAR & NAVEGAÇÃO ================= */
+/* ================= TOP BAR & MENU DE 3 PONTINHOS ================= */
 .top-bar {
   position: fixed;
   top: 0; left: 0; right: 0;
   height: calc(62px + var(--safe-top));
   padding: var(--safe-top) 14px 0;
-  background: rgba(9, 9, 13, 0.88);
+  background: rgba(9, 9, 13, 0.9);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border);
@@ -309,12 +407,22 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
 .brand-mini {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   font-weight: 800;
   font-size: 1.05rem;
   white-space: nowrap;
 }
 .brand-mini img { max-height: 26px; }
+.brand-mini-symbol {
+  background: var(--primary);
+  color: #fff;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .top-center {
   flex: 1;
@@ -333,25 +441,59 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   width: 100%;
   max-width: 380px;
 }
-.search-icon { font-size: 0.85rem; opacity: 0.75; }
+.search-icon { color: var(--text-muted); width: 16px; height: 16px; }
 .search-box input {
   background: transparent;
   border: none;
   color: var(--text);
-  padding: 8px 6px;
+  padding: 8px;
   width: 100%;
   min-width: 0;
   font-size: 0.88rem;
 }
 .search-box input:focus { outline: none; }
 
-/* Navegação Mobile (Bottom Bar) */
+.menu-wrapper { position: relative; }
+.top-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 205px;
+  background: #181822;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.75);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.top-dropdown-item {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+.top-dropdown-item:hover { background: rgba(255, 255, 255, 0.08); }
+.top-dropdown-item.danger { color: #ff5c5c; }
+
+/* ================= NAVEGAÇÃO PRINCIPAL ================= */
 .main-nav {
   position: fixed;
   bottom: 0; left: 0; right: 0;
   height: calc(64px + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
-  background: rgba(14, 14, 20, 0.95);
+  background: rgba(14, 14, 20, 0.96);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--border);
@@ -368,13 +510,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  justify-content: center;
+  gap: 4px;
   font-size: 0.72rem;
   font-weight: 500;
   cursor: pointer;
-  padding: 6px 10px;
+  padding: 6px 8px;
+  flex: 1;
 }
-.nav-icon { font-size: 1.2rem; }
 .nav-item.active { color: var(--primary); font-weight: 700; }
 
 /* ================= CONTEÚDO PRINCIPAL & BANNER ================= */
@@ -432,7 +575,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
 }
 .hero-actions { display: flex; gap: 10px; }
 
-/* Filtros de Categoria */
+/* Filtros de Categoria (Filmes e Séries) */
 .category-bar {
   display: flex;
   gap: 8px;
@@ -451,7 +594,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   font-size: 0.82rem;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
 }
 .cat-chip.active {
   background: var(--primary);
@@ -460,7 +602,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   font-weight: 600;
 }
 
-/* Carrosséis Horizontais (Home & TV ao Vivo por Categoria) */
+/* Carrosséis Horizontais */
 .media-row { padding: 14px 0 4px; }
 .row-header {
   display: flex;
@@ -468,10 +610,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   justify-content: space-between;
   padding: 0 16px 10px;
 }
-.row-title {
-  font-size: 1.08rem;
-  font-weight: 700;
-}
+.row-title { font-size: 1.06rem; font-weight: 700; }
 .row-more-btn {
   background: transparent;
   border: none;
@@ -479,6 +618,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .row-scroller {
@@ -493,20 +635,48 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
 .row-scroller .media-card { flex: 0 0 142px; }
 .row-scroller .media-card.live-card { flex: 0 0 156px; }
 
-/* Grade Responsiva */
+/* Grade Responsiva e Cabeçalho com Botão Voltar */
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px 8px;
+  gap: 12px;
+  padding: 16px 16px 10px;
 }
-.count-badge { font-size: 0.8rem; color: var(--text-muted); }
+.section-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.section-title-group h2 {
+  font-size: 1.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.btn-back-inline {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 7px 12px;
+  border-radius: 9px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.btn-back-inline:hover { border-color: var(--primary); color: var(--primary); }
+.count-badge { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
 
 .media-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 14px;
-  padding: 8px 16px;
+  padding: 6px 16px;
 }
 
 .media-card {
@@ -541,7 +711,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
 }
 .card-thumb.live-thumb img { object-fit: contain; }
 
-.card-fallback-icon { font-size: 2rem; color: var(--text-muted); }
+.card-fallback-svg {
+  width: 32px;
+  height: 32px;
+  stroke: var(--text-muted);
+  stroke-width: 1.6;
+  fill: none;
+}
 
 .card-progress-bar {
   position: absolute;
@@ -567,6 +743,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 60px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.empty-state svg { width: 42px; height: 42px; opacity: 0.45; }
 
 .scroll-sentinel { height: 30px; width: 100%; }
 
@@ -604,7 +791,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   width: 36px; height: 36px;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal-hero { position: relative; height: 210px; background: #1a1a24; }
@@ -653,7 +842,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
 .modal-synopsis { color: #d6d6e0; font-size: 0.92rem; line-height: 1.55; }
 .modal-extra { margin-top: 12px; font-size: 0.82rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
 
-/* Episódios de Série */
 .series-box { margin-top: 22px; border-top: 1px solid var(--border); padding-top: 16px; }
 .series-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .season-select {
@@ -715,6 +903,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   font-weight: 600;
   cursor: pointer;
   backdrop-filter: blur(8px);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .player-spinner {
@@ -730,7 +921,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
 
 /* ================= RESPONSIVIDADE DESKTOP & SMART TV ================= */
 @media (min-width: 768px) {
-  .hide-mobile { display: inline; }
   .modal-overlay { align-items: center; padding: 24px; }
   .modal-card { border-radius: 20px; max-height: 88vh; }
 
@@ -749,11 +939,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, .media-card:foc
   }
   .nav-item {
     flex-direction: row;
+    justify-content: flex-start;
     width: 100%;
     padding: 12px 14px;
     border-radius: 10px;
     font-size: 0.95rem;
     gap: 12px;
+    flex: 0 0 auto;
   }
   .nav-item:hover, .nav-item.active { background: var(--surface); }
   .main-content { margin-left: 210px; padding-bottom: 40px; }
