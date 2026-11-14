@@ -4,9 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="theme-color" content="#09090d" />
-  <title>Stream PWA</title>
+  <title>CINEFLUX</title>
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3163/3163478.png" />
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
@@ -19,7 +21,7 @@
       <div class="brand-header" id="login-brand"></div>
       <p class="brand-subtitle" id="login-tagline"></p>
 
-      <!-- Menu Suspenso de Tipo de Conexão (Altura Uniforme) -->
+      <!-- Menu Suspenso de Tipo de Conexão -->
       <div class="connection-select-wrapper" id="conn-dropdown">
         <button type="button" class="connection-select-btn" id="conn-select-trigger" aria-expanded="false">
           <div class="select-trigger-text">
@@ -49,11 +51,11 @@
         </div>
       </div>
 
-      <!-- Formulário com Altura Padronizada -->
-      <form id="connection-form" class="auth-form">
+      <!-- Formulário -->
+      <form id="connection-form" class="auth-form" novalidate>
         <div class="auth-fields-stage">
           <div class="floating-group">
-            <input type="text" id="profile-name" placeholder=" " required />
+            <input type="text" id="profile-name" placeholder=" " />
             <label for="profile-name">Nome da Lista (Ex: Minha TV)</label>
           </div>
 
@@ -125,7 +127,7 @@
 
   <!-- ================= TELA PRINCIPAL DO APLICATIVO ================= -->
   <section id="app-screen" class="screen hidden">
-    
+
     <!-- Barra Superior -->
     <header class="top-bar">
       <div class="top-left">
@@ -138,13 +140,13 @@
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input type="search" id="search-input" placeholder="Pesquisar no app" />
+          <input type="search" id="search-input" placeholder="Pesquisar no app" autocomplete="off" autocorrect="off" spellcheck="false" />
         </div>
       </div>
 
       <!-- Menu de Três Pontinhos -->
       <div class="top-right menu-wrapper">
-        <button id="btn-top-menu" class="btn-icon-only" aria-label="Mais opções" aria-expanded="false">
+        <button type="button" id="btn-top-menu" class="btn-icon-only" aria-label="Mais opções" aria-expanded="false">
           <svg class="icon-svg" viewBox="0 0 24 24">
             <circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"></circle>
             <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"></circle>
@@ -172,22 +174,22 @@
       </div>
     </header>
 
-    <!-- Navegação Principal (Ícones SVG 100% Padronizados) -->
+    <!-- Navegação Principal -->
     <nav class="main-nav">
-      <button class="nav-item active" data-section="home">
+      <button type="button" class="nav-item active" data-section="home">
         <svg class="nav-svg" viewBox="0 0 24 24">
           <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V9.5z"></path>
         </svg>
         <span class="nav-label">Início</span>
       </button>
-      <button class="nav-item" data-section="live">
+      <button type="button" class="nav-item" data-section="live">
         <svg class="nav-svg" viewBox="0 0 24 24">
           <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
           <polyline points="17 2 12 7 7 2"></polyline>
         </svg>
         <span class="nav-label">TV ao Vivo</span>
       </button>
-      <button class="nav-item" data-section="movies">
+      <button type="button" class="nav-item" data-section="movies">
         <svg class="nav-svg" viewBox="0 0 24 24">
           <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
           <line x1="7" y1="2" x2="7" y2="22"></line>
@@ -196,7 +198,7 @@
         </svg>
         <span class="nav-label">Filmes</span>
       </button>
-      <button class="nav-item" data-section="series">
+      <button type="button" class="nav-item" data-section="series">
         <svg class="nav-svg" viewBox="0 0 24 24">
           <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
           <polyline points="2 17 12 22 22 17"></polyline>
@@ -204,7 +206,7 @@
         </svg>
         <span class="nav-label">Séries</span>
       </button>
-      <button class="nav-item" data-section="favorites">
+      <button type="button" class="nav-item" data-section="favorites">
         <svg class="nav-svg" viewBox="0 0 24 24">
           <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
         </svg>
@@ -214,7 +216,7 @@
 
     <!-- Conteúdo Rolável -->
     <main class="main-content" id="main-content">
-      
+
       <!-- Banner Destaque -->
       <div id="hero-banner" class="hero-banner hidden">
         <div class="hero-backdrop" id="hero-backdrop"></div>
@@ -224,11 +226,11 @@
           <h1 id="hero-title">Título em Destaque</h1>
           <p id="hero-desc">Toque para iniciar a reprodução.</p>
           <div class="hero-actions">
-            <button id="hero-play-btn" class="btn-primary">
+            <button type="button" id="hero-play-btn" class="btn-primary">
               <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
               <span>Assistir</span>
             </button>
-            <button id="hero-info-btn" class="btn-secondary">
+            <button type="button" id="hero-info-btn" class="btn-secondary">
               <svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
               <span>Sobre</span>
             </button>
@@ -236,13 +238,13 @@
         </div>
       </div>
 
-      <!-- Barra de Categorias (Usada apenas em Filmes e Séries) -->
+      <!-- Barra de Categorias -->
       <div id="category-bar" class="category-bar hidden"></div>
 
-      <!-- Seção de Carrosséis Horizontais (Início e TV ao Vivo) -->
+      <!-- Carrosséis Horizontais -->
       <div id="home-rows" class="rows-container"></div>
 
-      <!-- Grade Expandida (Com Botão Voltar) -->
+      <!-- Grade Expandida -->
       <div id="catalog-grid-wrapper" class="hidden">
         <div class="section-header">
           <div class="section-title-group">
@@ -264,10 +266,10 @@
   <!-- ================= TELA "SOBRE" (DETALHES DE FILME / SÉRIE) ================= -->
   <div id="vod-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
-      <button id="btn-close-modal" class="modal-close" aria-label="Fechar">
+      <button type="button" id="btn-close-modal" class="modal-close" aria-label="Fechar">
         <svg class="icon-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
-      
+
       <div class="modal-hero">
         <img id="modal-backdrop" src="" alt="" />
         <div class="modal-hero-gradient"></div>
@@ -287,7 +289,6 @@
           </div>
         </div>
 
-        <!-- Barra de progresso -->
         <div id="modal-progress-box" class="modal-progress-box hidden">
           <div class="progress-track">
             <div id="modal-progress-fill" class="progress-fill"></div>
@@ -295,26 +296,23 @@
           <span id="modal-progress-text" class="progress-label"></span>
         </div>
 
-        <!-- Botões de Ação -->
         <div class="modal-actions">
-          <button id="btn-resume" class="btn-primary hidden">
+          <button type="button" id="btn-resume" class="btn-primary hidden">
             <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
             <span>Continuar de <span id="resume-time-label">00:00</span></span>
           </button>
-          <button id="btn-play-start" class="btn-primary">
+          <button type="button" id="btn-play-start" class="btn-primary">
             <svg class="icon-svg" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
             <span>Assistir do início</span>
           </button>
-          <button id="btn-toggle-fav" class="btn-secondary">
+          <button type="button" id="btn-toggle-fav" class="btn-secondary">
             + Minha Lista
           </button>
         </div>
 
-        <!-- Sinopse e Detalhes -->
         <p id="modal-synopsis" class="modal-synopsis"></p>
         <div id="modal-extra-info" class="modal-extra"></div>
 
-        <!-- Seletor de Temporadas e Episódios -->
         <div id="series-episodes-box" class="series-box hidden">
           <div class="series-header">
             <h3>Episódios</h3>
@@ -329,7 +327,7 @@
   <!-- ================= PLAYER DE VÍDEO FULLSCREEN ================= -->
   <div id="player-overlay" class="player-overlay hidden">
     <div class="player-top-controls">
-      <button id="btn-close-player" class="btn-player-ctrl">
+      <button type="button" id="btn-close-player" class="btn-player-ctrl">
         <svg class="icon-svg" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
         <span>Voltar</span>
       </button>
@@ -338,19 +336,19 @@
         <span id="player-subtitle"></span>
       </div>
       <div class="player-right-ctrls">
-        <button id="btn-restart-video" class="btn-player-ctrl" title="Recomeçar">
+        <button type="button" id="btn-restart-video" class="btn-player-ctrl" title="Recomeçar">
           <svg class="icon-svg" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
           <span>Início</span>
-        </button>
-        <button id="btn-pip" class="btn-player-ctrl" title="Picture-in-Picture">
-          <svg class="icon-svg" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><rect x="12" y="10" width="8" height="5" rx="1"></rect></svg>
-          <span>PiP</span>
         </button>
       </div>
     </div>
 
     <video id="video-player" controls playsinline webkit-playsinline x-webkit-airplay="allow" autoplay></video>
     <div id="player-spinner" class="player-spinner hidden">Carregando stream...</div>
+    <div id="player-error" class="player-error-box hidden">
+      <p id="player-error-msg">Não foi possível reproduzir este canal.</p>
+      <button type="button" id="btn-player-retry" class="btn-primary">Tentar novamente</button>
+    </div>
   </div>
 
   <script src="config.js"></script>
